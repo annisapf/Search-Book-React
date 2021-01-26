@@ -3,6 +3,9 @@ import Navbar from "../components/Navbar/Navbar"
 import Jumbotron from "../components/Jumbotron/Jumbotron"
 import Container from "../components/Container/Container"
 import Card from "../components/Card/Card"
+import API from "../utils/API"
+import { DangerAlert } from "../components/Alert/Alert"
+import $ from "jquery"
 
 function Saved() {
 
@@ -13,14 +16,40 @@ function Saved() {
   }, [])
 
   function loadSavedBooks() {
+    API.getBooks()
+      .then(res => setBooks(res.data))
+      .catch(err => console.log(err));
   }
 
-  function handleButtonClick() {
- 
-  }
-  
+  function handleButtonClick(event) {
+    event.stopPropagation();
 
-  function deleteBook() {
+    const deleteID = event.currentTarget.getAttribute("id")
+    const alertnumber = event.currentTarget.getAttribute("alertnumber")
+
+    if (event.currentTarget.name === "delete") {
+      // console.log("clicked delete");
+      deleteBook(deleteID, alertnumber)
+    }
+  }
+
+  function deleteBook(id, index) {
+    API.deleteBook(id)
+      .then(res => {
+        $(`#danger-alert${index}`).show()
+        $(`#danger-alert${index}`)
+          .fadeTo(2500, 500)
+          .slideUp(500, function () {
+            $(`#danger-alert${index}`).slideUp(500);
+          });
+
+        setTimeout(function () {
+          loadSavedBooks()
+        }, 3000)
+
+        // console.log(res);
+      })
+      .catch(err => console.log(err));
   }
 
   return (
@@ -31,11 +60,36 @@ function Saved() {
 
       <Container>
         <h1>Saved Books</h1>
-         
+        <br />
+        <h3>{books.length > 0 ? "" : "No current saved books"}</h3>
+          {books.map((books, index) => {
+          return (
+            <div key={index}>
+              <DangerAlert
+                alertnumber={index}
+                title={books.title}
+              />
+              <Card
+                src={books.image}
+                alt={books.title}
+                title={books.title}
+                authors={books.authors}
+                description={books.description}
+                link={books.link}
+                buttonvalue1="View"
+                buttonvalue2="Delete"
+                buttonname2="delete"
+                id={books._id}
+                onClick={handleButtonClick}
+                alertnumber={index}
+              />
+            </div>
+          )
+        })}
       </Container>
     </>
   )
-  }
+}
 
 
 export default Saved;

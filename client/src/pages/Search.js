@@ -5,6 +5,7 @@ import Container from "../components/Container/Container"
 import { Input, FormBtn } from "../components/Form/Form"
 import Card from "../components/Card/Card"
 import { SuccessAlert } from "../components/Alert/Alert"
+import API from "../utils/API"
 import $ from "jquery"
 
 function Search() {
@@ -13,7 +14,13 @@ function Search() {
   const [results, setResults] = useState([])
 
   function searchBooks(query) {
-
+    API.search(query)
+      .then(res => {
+        // console.log(res);
+        // console.log(res.data.items);
+        setResults(res.data.items)
+      })
+      .catch(err => console.log(err));
   };
 
   function handleInputChange(event) {
@@ -25,18 +32,39 @@ function Search() {
   function handleFormSubmit(event) {
     event.preventDefault();
 
+    searchBooks(search)
+    setSearch("");
   };
 
   function handleButtonClick(event) {
+    // event.preventDefault()
     event.stopPropagation()
+
+    const title = event.currentTarget.getAttribute("title")
+    const authors = event.currentTarget.getAttribute("authors")
+    const description = event.currentTarget.getAttribute("description")
+    const src = event.currentTarget.getAttribute("src")
+    const link = event.currentTarget.getAttribute("link")
+    const alertnumber = event.currentTarget.getAttribute("alertnumber")
 
     if (event.currentTarget.name === "save") {
       // console.log("clicked save");      
+      saveBook({ title, authors, description, image: src, link }, alertnumber);
     }
   }
 
-  function saveBook() {
-  
+  function saveBook(object, index) {
+    API.saveBook(object)
+      .then(res => {
+        // console.log(res)
+        $(`#success-alert${index}`).show()
+        $(`#success-alert${index}`)
+          .fadeTo(3000, 500)
+          .slideUp(500, function () {
+            $(`#success-alert${index}`).slideUp(500);
+          });
+      })
+      .catch(err => console.log(err));
   }
 
   return (
@@ -57,7 +85,34 @@ function Search() {
 
       <Container>
         <br/>
-        
+        <br/>
+        <h1>{results.length > 0 ? "Results" : ""}</h1>
+        {results.map((books, index) => {
+          return (
+            <div key={index}>
+              <SuccessAlert
+                alertnumber={index}
+                title={books.volumeInfo.title}
+              />
+              <Card
+                src={books.volumeInfo.imageLinks ? 
+                books.volumeInfo.imageLinks.smallThumbnail : "https://via.placeholder.com/150?text=No Image"}
+                alt={books.volumeInfo.title}
+                title={books.volumeInfo.title}
+                authors={!books.volumeInfo.authors ?
+                  "No author available" : books.volumeInfo.authors}
+                description={!books.volumeInfo.description ?
+                  "No description available" : books.volumeInfo.description}
+                link={books.volumeInfo.infoLink}
+                buttonvalue1="View"
+                buttonvalue2="Save"
+                buttonname2="save"
+                onClick={handleButtonClick}
+                alertnumber={index}
+              />
+            </div>
+          )
+        })}
       </Container>
     </>
   )
